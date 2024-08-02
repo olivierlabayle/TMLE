@@ -95,7 +95,7 @@ ConditionalDistributionEstimator(train_validation_indices, model) =
 
 Estimates all components of Ψ and then Ψ itself.
 """
-function (estimator::Estimator)(Ψ::ComposedEstimand, dataset; cache=Dict(), verbosity=1, backend=AD.ZygoteBackend())
+function (estimator::Estimator)(Ψ::ComposedEstimand, dataset; cache=Dict(), verbosity=1, backend=DI.AutoZygote())
     estimates = map(Ψ.args) do estimand 
         estimate, _ = estimator(estimand, dataset; cache=cache, verbosity=verbosity)
         estimate
@@ -157,20 +157,22 @@ f(x, y) = [x^2 - y, y - 3x]
 compose(f, res₁, res₂)
 ```
 """
-function compose(f, estimates...; backend=AD.ZygoteBackend())
+function compose(f, estimates...; backend=DI.AutoZygote())
     f₀, σ₀, n = _compose(f, estimates...; backend=backend)
     estimand = ComposedEstimand(f, Tuple(e.estimand for e in estimates))
     return ComposedEstimate(estimand, estimates, f₀, σ₀, n)
 end
 
-function _compose(f, estimates...; backend=AD.ZygoteBackend())
+_make_vec(x::Number) = [x]
+_make_vec(x::AbstractVector) = x
+
+function _compose(f, estimates...; backend=DI.AutoZygote())
     Σ = covariance_matrix(estimates...)
     point_estimates = [r.estimate for r in estimates]
-    f₀, Js = AD.value_and_jacobian(backend, f, point_estimates...)
-    J = hcat(Js...)
+    f₀, J = DI.value_and_jacobian(_make_vec ∘ Base.splat(f), backend, point_estimates)
     n = size(first(estimates).IC, 1)
     σ₀ = J * Σ * J'
-    return collect(f₀), σ₀, n
+    return f₀, σ₀, n
 end
 
 function covariance_matrix(estimates...)
