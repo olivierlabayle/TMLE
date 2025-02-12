@@ -38,9 +38,9 @@ export significance_test, OneSampleTTest, OneSampleZTest, OneSampleHotellingT2Te
 export compose
 export default_models, TreatmentTransformer, with_encoder, encoder
 export BackdoorAdjustment, identify
-export last_fluctuation_epsilon
 export Configuration
 export brute_force_ordering, groups_ordering
+export gradients, epsilons, estimates
 
 # #############################################################################
 # INCLUDES
@@ -64,5 +64,6 @@ include("counterfactual_mean_based/gradient.jl")
 
 include("configuration.jl")
 include("testing.jl")
+include("cache.jl")
 
 end
